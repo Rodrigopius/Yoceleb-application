@@ -14,8 +14,7 @@ interface User {
   email: string;
   phone: string;
   role: string,
-  is_new_user: boolean,
-  displayPicture: string;
+  displayPicture: string | null;
 }
 
 const initialState: UserState = {
@@ -28,7 +27,6 @@ const initialState: UserState = {
     displayPicture: '',
     role: "",
     phone: "",
-    is_new_user: true
   },
   authToken: '',
 
@@ -54,7 +52,6 @@ export const userSlice = createSlice({
         email: '',
         displayPicture: '',
         role: "",
-        is_new_user: false,
         phone: ""
       }
     },
@@ -70,9 +67,7 @@ export const userSlice = createSlice({
         state.user.displayPicture = action.payload;
       }
     },
-    updateIsNewUser: (state, action: PayloadAction<boolean>) => {
-      state.user.is_new_user = false;
-    }
+
   },
 });
 

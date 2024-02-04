@@ -1,13 +1,56 @@
 
-import {FC} from 'react'
-import {Link} from 'react-router-dom'
-import {useAuth} from '../../../../app/modules/auth'
-import {Languages} from './Languages'
-import {toAbsoluteUrl} from '../../../helpers'
+import { FC } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../../../app/modules/auth'
+import { Languages } from './Languages'
+import { toAbsoluteUrl } from '../../../helpers'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from '../../../../redux/store'
+import { logoutUser } from '../../../../redux/slices/UserSlice'
+import { signUserOut } from '../../../../firebase';
+import Swal from 'sweetalert2';
 
 const HeaderUserMenu: FC = () => {
-  const {currentUser, logout} = useAuth()
+  // const { currentUser, logout } = useAuth()
+
+  const { user } = useSelector((state: RootState) => state.user)
+
+  const displayName = `${user?.fname} ${user?.lname}`;
+
+  const dispatch = useDispatch<any>();
+  const navigate = useNavigate();
+
+  const logout = async () => {
+
+
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, Logout!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(logoutUser());
+        signUserOut();
+        navigate('/auth/login');
+        return Swal.fire(
+          'Logout!',
+          'You have been logged out.',
+          'success'
+        )
+      }
+      else {
+        return;
+      }
+    })
+
+  }
+
   return (
+
     <div
       className='menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg menu-state-primary fw-bold py-4 fs-6 w-275px'
       data-kt-menu='true'
@@ -20,11 +63,11 @@ const HeaderUserMenu: FC = () => {
 
           <div className='d-flex flex-column'>
             <div className='fw-bolder d-flex align-items-center fs-5'>
-              {currentUser?.first_name} {currentUser?.first_name}
+              {displayName}
               <span className='badge badge-light-success fw-bolder fs-8 px-2 py-1 ms-2'>Pro</span>
             </div>
             <a href='#' className='fw-bold text-muted text-hover-primary fs-7'>
-              {currentUser?.email}
+              {user?.email}
             </a>
           </div>
         </div>
@@ -124,12 +167,12 @@ const HeaderUserMenu: FC = () => {
       </div>
 
       <div className='menu-item px-5'>
-        <a onClick={logout} className='menu-link px-5'>
+        <div onClick={logout} className='menu-link px-5'>
           Sign Out
-        </a>
+        </div>
       </div>
     </div>
   )
 }
 
-export {HeaderUserMenu}
+export { HeaderUserMenu }

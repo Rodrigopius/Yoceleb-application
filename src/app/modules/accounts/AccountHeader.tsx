@@ -6,9 +6,13 @@ import {Dropdown1} from '../../../_metronic/partials'
 import {useLocation} from 'react-router'
 import { ToolbarWrapper } from '../../../_metronic/layout/components/toolbar'
 import { Content } from '../../../_metronic/layout/components/content'
+import { useSelector } from 'react-redux'
+import { RootState } from '../../../redux/store'
 
 const AccountHeader: FC = () => {
   const location = useLocation()
+
+  const {user} = useSelector((state: RootState) => state.user)
 
   return (
     <>
@@ -29,7 +33,7 @@ const AccountHeader: FC = () => {
                   <div className='d-flex flex-column'>
                     <div className='d-flex align-items-center mb-2'>
                       <a href='#' className='text-gray-800 text-hover-primary fs-2 fw-bolder me-1'>
-                        Max Smith
+                        {`${user?.fname} ${user?.lname}`}
                       </a>
                       <a href='#'>
                         <KTIcon iconName='verify' className='fs-1 text-primary' />

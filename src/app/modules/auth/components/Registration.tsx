@@ -1,14 +1,16 @@
 
 
-import {useState, useEffect} from 'react'
-import {useFormik} from 'formik'
+import { useState, useEffect } from 'react'
+import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import clsx from 'clsx'
-import {getUserByToken, register} from '../core/_requests'
-import {Link} from 'react-router-dom'
-import {toAbsoluteUrl} from '../../../../_metronic/helpers'
-import {PasswordMeterComponent} from '../../../../_metronic/assets/ts/components'
-import {useAuth} from '../core/Auth'
+import { getUserByToken, register } from '../core/_requests'
+import { Link, useNavigate } from 'react-router-dom'
+import { toAbsoluteUrl } from '../../../../_metronic/helpers'
+import { PasswordMeterComponent } from '../../../../_metronic/assets/ts/components'
+import { useAuth } from '../core/Auth'
+import { registerUser } from '../../../../firebase';
+import Swal from 'sweetalert2';
 
 const initialValues = {
   firstname: '',
@@ -47,25 +49,52 @@ const registrationSchema = Yup.object().shape({
 
 export function Registration() {
   const [loading, setLoading] = useState(false)
-  const {saveAuth, setCurrentUser} = useAuth()
+  const { saveAuth, setCurrentUser } = useAuth()
+
+  const navigate = useNavigate();
+
   const formik = useFormik({
     initialValues,
     validationSchema: registrationSchema,
-    onSubmit: async (values, {setStatus, setSubmitting}) => {
+    onSubmit: async (values, { setStatus, setSubmitting }) => {
       setLoading(true)
       try {
-        const {data: auth} = await register(
-          values.email,
-          values.firstname,
-          values.lastname,
-          values.password,
-          values.changepassword
-        )
-        saveAuth(auth)
-        const {data: user} = await getUserByToken(auth.api_token)
-        setCurrentUser(user)
+        // const { data: auth } = await register(
+        //   values.email,
+        //   values.firstname,
+        //   values.lastname,
+        //   values.password,
+        //   values.changepassword
+        // )
+        // saveAuth(auth)
+        // const {data: user} = await getUserByToken(auth.api_token)
+        // setCurrentUser(user)
+        const data = await registerUser(values.email, values.password, values.firstname, values.lastname)
+
+        console.log("============here===============================")
+        console.log(data)
+        console.log("=============here====================")
+
+        Swal.fire({
+          position: "center",
+          icon: 'success',
+          title: 'Please check your email to verify your account',
+          showConfirmButton: false,
+          timer: 3000
+        })
+        setSubmitting(false)
+        return navigate("/auth/login");
+
       } catch (error) {
-        console.error(error)
+        // console.error(error)
+        Swal.fire({
+          position: "center",
+          icon: 'error',
+          title: "Email already in use",
+          showConfirmButton: false,
+          timer: 5000,
+
+        })
         saveAuth(undefined)
         setStatus('The registration details is incorrect')
         setSubmitting(false)
@@ -215,7 +244,7 @@ export function Registration() {
           {...formik.getFieldProps('email')}
           className={clsx(
             'form-control bg-transparent',
-            {'is-invalid': formik.touched.email && formik.errors.email},
+            { 'is-invalid': formik.touched.email && formik.errors.email },
             {
               'is-valid': formik.touched.email && !formik.errors.email,
             }
@@ -346,7 +375,7 @@ export function Registration() {
         >
           {!loading && <span className='indicator-label'>Submit</span>}
           {loading && (
-            <span className='indicator-progress' style={{display: 'block'}}>
+            <span className='indicator-progress' style={{ display: 'block' }}>
               Please wait...{' '}
               <span className='spinner-border spinner-border-sm align-middle ms-2'></span>
             </span>
@@ -360,6 +389,13 @@ export function Registration() {
           >
             Cancel
           </button>
+        </Link>
+      </div>
+
+      <div className='text-gray-500 text-center fw-semibold fs-6'>
+        Already have an account?{' '}
+        <Link to='/auth/login' className='link-primary'>
+          Login
         </Link>
       </div>
       {/* end::Form group */}

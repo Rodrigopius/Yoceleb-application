@@ -1,12 +1,17 @@
 
-import {useState} from 'react'
+import { useState } from 'react'
 import * as Yup from 'yup'
 import clsx from 'clsx'
-import {Link} from 'react-router-dom'
-import {useFormik} from 'formik'
-import {getUserByToken, login} from '../core/_requests'
-import {toAbsoluteUrl} from '../../../../_metronic/helpers'
-import {useAuth} from '../core/Auth'
+import { Link, useNavigate } from 'react-router-dom'
+import { useFormik } from 'formik'
+import { getUserByToken, login } from '../core/_requests'
+import { toAbsoluteUrl } from '../../../../_metronic/helpers'
+import { useAuth } from '../core/Auth';
+import { getUserDetailsByUid, signInUser } from '../../../../firebase'
+import { useDispatch } from 'react-redux'
+// import { signInUser } from "../../../../firebase";
+import Swal from 'sweetalert2';
+import { updateUserState } from '../../../../redux/slices/UserSlice'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -20,9 +25,14 @@ const loginSchema = Yup.object().shape({
     .required('Password is required'),
 })
 
+// const initialValues = {
+//   email: 'admin@demo.com',
+//   password: 'demo',
+// }
+
 const initialValues = {
-  email: 'admin@demo.com',
-  password: 'demo',
+  email: "",
+  password: "",
 }
 
 /*
@@ -33,18 +43,61 @@ const initialValues = {
 
 export function Login() {
   const [loading, setLoading] = useState(false)
-  const {saveAuth, setCurrentUser} = useAuth()
+  const { saveAuth, setCurrentUser } = useAuth()
+
+  const navigation = useNavigate()
+
+  const dispatch = useDispatch()
 
   const formik = useFormik({
     initialValues,
     validationSchema: loginSchema,
-    onSubmit: async (values, {setStatus, setSubmitting}) => {
+    onSubmit: async (values, { setStatus, setSubmitting }) => {
       setLoading(true)
       try {
-        const {data: auth} = await login(values.email, values.password)
-        saveAuth(auth)
-        const {data: user} = await getUserByToken(auth.api_token)
-        setCurrentUser(user)
+        // const { data: auth } = await login(values.email, values.password)
+        // saveAuth(auth)
+        // const { data: user } = await getUserByToken(auth.api_token)
+        //setCurrentUser(user)
+        const data = await signInUser(values.email, values.password)
+        setSubmitting(false)
+        if (data.emailVerified) {
+          const userDetails = await getUserDetailsByUid(data.uid);
+
+
+          // dispatch()
+          dispatch(
+            updateUserState({
+              isLoggedIn: true,
+              user: {
+                fname: userDetails?.firstName,
+                lname: userDetails?.lastName,
+                email: userDetails?.email,
+                displayPicture: data?.photoURL,
+                UID: data?.uid,
+                phone: userDetails?.phone,
+                role: userDetails?.role
+              },
+              authToken: data.uid,
+
+            }),
+          );
+
+          return navigation("/dashboard");
+        }
+        else {
+          return Swal.fire({
+            title: 'Error',
+            text: 'Please verify your email first',
+            icon: 'error',
+            confirmButtonText: 'Ok'
+          })
+        }
+
+
+
+
+        console.log(data.uid)
       } catch (error) {
         console.error(error)
         saveAuth(undefined)
@@ -141,7 +194,7 @@ export function Login() {
           {...formik.getFieldProps('email')}
           className={clsx(
             'form-control bg-transparent',
-            {'is-invalid': formik.touched.email && formik.errors.email},
+            { 'is-invalid': formik.touched.email && formik.errors.email },
             {
               'is-valid': formik.touched.email && !formik.errors.email,
             }
@@ -207,7 +260,7 @@ export function Login() {
         >
           {!loading && <span className='indicator-label'>Continue</span>}
           {loading && (
-            <span className='indicator-progress' style={{display: 'block'}}>
+            <span className='indicator-progress' style={{ display: 'block' }}>
               Please wait...
               <span className='spinner-border spinner-border-sm align-middle ms-2'></span>
             </span>
